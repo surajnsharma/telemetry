@@ -222,3 +222,10 @@ Choose an action:
 
 ## END ##
 
+
+# Juniper Configuration
+set system services netconf ssh
+set system services ssh root-login allow
+set system services extension-service request-response grpc clear-text port 57400
+set system services extension-service request-response grpc skip-authentication
+

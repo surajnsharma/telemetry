@@ -216,3 +216,26 @@ Press Enter after adding the SSH key to GitHub...
 sed: can't read /Host github.com/,+2d: No such file or directory
 SSH configuration updated to use id_ed25519 for GitHub.
 Checking for files larger than 100 MB to track with Git LFS...
+Starting Git setup script...
+Git repository already exists in this directory.
+Current Git configuration:
+GitHub Username: surajnsharma
+GitHub Email: surajshamra@juniper.net
+Repository Name: telemetry
+Remote URL: git@github.com:surajnsharma/telemetry.git
+
+Press Enter to keep this configuration or type 'change' to update.
+Choose an action:
+1) Update (pull latest changes)
+2) Push new changes (requires SSH access)
+3) Delete the local Git repository
+4) Delete Online Git repository
+Enter your choice: Remote URL updated to git@github.com:surajnsharma/telemetry.git
+Generating SSH key (id_ed25519)...
+SSH key generated at ~/.ssh/id_ed25519
+Copy the SSH key below and add it to your GitHub account under Settings > SSH and GPG keys > New SSH key:
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICj5SBbrgbAA2iLuZT+Z9z+PsnJVMCUAZOEvgcygAqyl surajshamra@juniper.net
+
+Press Enter after adding the SSH key to GitHub...
+SSH configuration updated to use id_ed25519 for GitHub.
+Checking for files larger than 100 MB to track with Git LFS...

@@ -5,3 +5,5 @@
 /junos/system/linecard/packet/usage/
 /interfaces/interface/state/
 /junos/system/linecard/optics/
+/junos/system/linecard/qmon-sw
+/junos/system/linecard/interface/traffic

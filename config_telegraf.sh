@@ -185,7 +185,7 @@ read_server_addresses() {
     done
 }
 
-# Function to generate gNMI input configuration
+
 generate_gnmi_input() {
     echo "[[inputs.gnmi]]"
     if [ ${#selected_servers[@]} -gt 0 ]; then
@@ -198,15 +198,20 @@ generate_gnmi_input() {
     echo "  encoding = \"proto\""
     echo "  redial = \"10s\""
 
+    local index=1
     for sensor in "${selected_sensors[@]}"; do
         if [[ -n "$sensor" ]]; then
             echo "  [[inputs.gnmi.subscription]]"
+            echo "    name = \"sensor_${index}\""  # Generate a unique name
             echo "    path = \"$sensor\""
             echo "    subscription_mode = \"sample\""
             echo "    sample_interval = \"10s\""
+            ((index++))  # Increment the index for the next subscription
         fi
     done
 }
+
+
 
 # Function to generate JTI input configuration
 generate_jti_input() {
@@ -378,4 +383,5 @@ while true; do
     esac
     echo # Blank line for readability
 done
+
 
