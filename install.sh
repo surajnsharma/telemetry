@@ -525,7 +525,7 @@ EOF'
     wait_for_service "prometheus"
 }
 
-# Function to install Telegraf
+
 install_telegraf() {
     if check_service_status "telegraf"; then
         if ! prompt_for_reinstall "Telegraf"; then
@@ -534,16 +534,48 @@ install_telegraf() {
         fi
     fi
 
-    echo "Installing Telegraf..."
+    echo "Adding InfluxData repository for Telegraf installation..."
+    # Add InfluxData repository
+    curl -sL https://repos.influxdata.com/influxdb.key | sudo apt-key add -
+    echo "deb https://repos.influxdata.com/ubuntu focal stable" | sudo tee /etc/apt/sources.list.d/influxdb.list
+
+    echo "Updating package lists..."
     sudo apt-get update
-    sudo apt-get install -y telegraf
+
+    echo "Attempting to install Telegraf using apt-get..."
+    if sudo apt-get install -y telegraf; then
+        echo -e "\e[32mTelegraf installed successfully using apt-get.\e[0m"
+    else
+        echo -e "\e[31mFailed to install Telegraf using apt-get. Falling back to manual installation.\e[0m"
+
+        # Manual installation fallback
+        TELEGRAF_VERSION="1.27.4"
+        TELEGRAF_URL="https://dl.influxdata.com/telegraf/releases/telegraf_${TELEGRAF_VERSION}-1_amd64.deb"
+
+        echo "Downloading Telegraf version ${TELEGRAF_VERSION}..."
+        wget "$TELEGRAF_URL" -O telegraf_${TELEGRAF_VERSION}.deb
+
+        echo "Installing Telegraf manually..."
+        sudo dpkg -i telegraf_${TELEGRAF_VERSION}.deb
+        sudo apt-get -f install -y
+    fi
+
+    # Enable and start Telegraf service
+    echo "Enabling and starting Telegraf service..."
     sudo systemctl enable telegraf
     sudo systemctl start telegraf
+
+    # Check service status
+    if systemctl is-active --quiet telegraf; then
+        echo -e "\e[32mTelegraf installed and running successfully.\e[0m"
+    else
+        echo -e "\e[31mFailed to start Telegraf. Check the logs for more information.\e[0m"
+        troubleshoot_telegraf
+    fi
+
     echo -e "Telegraf configuration path:\n/etc/telegraf/telegraf.conf\n" >> URL.md
     wait_for_service "telegraf"
 }
-
-
 
 # Function to uninstall gnmic
 uninstall_gnmic() {
