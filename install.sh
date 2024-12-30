@@ -471,22 +471,40 @@ install_prometheus() {
         fi
     fi
 
-    # Check if the package exists locally
-    if [ ! -f "prometheus-2.54.1.linux-amd64.tar.gz" ]; then
-        echo "Downloading Prometheus..."
-        wget -O "$PROMETHEUS_PACKAGE" "$PROMETHEUS_URL"
-        tar -xvf "$PROMETHEUS_PACKAGE"
-                sudo mv prometheus /usr/local/bin/
-                sudo chmod +x /usr/local/bin/prometheus
-                sudo systemctl enable prometheus && sudo systemctl start prometheus
-                echo "Prometheus installed."
-    
-    else
-        echo "Found Prometheus package locally."
+    # Check if Prometheus binary exists and matches the required version
+    PROMETHEUS_VERSION="2.54.1"
+    PROMETHEUS_BINARY="/usr/local/bin/prometheus"
+    PROMETHEUS_PACKAGE="prometheus-${PROMETHEUS_VERSION}.linux-amd64.tar.gz"
+    PROMETHEUS_URL="https://github.com/prometheus/prometheus/releases/download/v${PROMETHEUS_VERSION}/${PROMETHEUS_PACKAGE}"
+
+    if [ -f "$PROMETHEUS_BINARY" ]; then
+        INSTALLED_VERSION=$($PROMETHEUS_BINARY --version | head -n 1 | grep -oP '\d+\.\d+\.\d+')
+        if [ "$INSTALLED_VERSION" == "$PROMETHEUS_VERSION" ]; then
+            echo "Prometheus $INSTALLED_VERSION is already installed."
+        else
+            echo "Prometheus version mismatch. Updating to $PROMETHEUS_VERSION..."
+            sudo rm -f "$PROMETHEUS_BINARY"
+        fi
     fi
 
+    # Download and extract Prometheus if needed
+    if [ ! -f "$PROMETHEUS_BINARY" ]; then
+        if [ ! -f "$PROMETHEUS_PACKAGE" ]; then
+            echo "Downloading Prometheus..."
+            wget -O "$PROMETHEUS_PACKAGE" "$PROMETHEUS_URL"
+        else
+            echo "Found Prometheus package locally."
+        fi
+
+        echo "Extracting Prometheus package..."
+        tar -xvf "$PROMETHEUS_PACKAGE"
+        sudo mv prometheus-${PROMETHEUS_VERSION}.linux-amd64/prometheus /usr/local/bin/
+        sudo chmod +x /usr/local/bin/prometheus
+        echo "Prometheus binary copied to /usr/local/bin/"
+    fi
 
     # Create Prometheus systemd service
+    echo "Creating Prometheus systemd service..."
     sudo bash -c 'cat > /etc/systemd/system/prometheus.service <<EOF
 [Unit]
 Description=Prometheus Monitoring
@@ -500,10 +518,23 @@ User=root
 [Install]
 WantedBy=multi-user.target
 EOF'
+
+    # Enable and start Prometheus service
+    echo "Enabling and starting Prometheus service..."
+    sudo systemctl daemon-reload
     sudo systemctl enable prometheus
     sudo systemctl start prometheus
 
-    # Store the prometheus.yml in /etc/prometheus
+    # Verify service status
+    if systemctl is-active --quiet prometheus; then
+        echo "Prometheus service started successfully."
+    else
+        echo "Failed to start Prometheus service. Check logs for details."
+        sudo journalctl -u prometheus -xe
+    fi
+
+    # Create Prometheus configuration directory and default configuration file
+    echo "Configuring Prometheus..."
     sudo mkdir -p /etc/prometheus
     sudo bash -c 'cat > /etc/prometheus/prometheus.yml <<EOF
 global:
@@ -518,14 +549,19 @@ scrape_configs:
     static_configs:
       - targets: ["0.0.0.0:9464"]
 EOF'
-    echo "Prometheus installed and configuration file created at /etc/prometheus/prometheus.yml"
+
+    echo "Prometheus configuration file created at /etc/prometheus/prometheus.yml"
 
     # Log to URL.md
     echo -e "Prometheus configuration:\n/etc/prometheus/prometheus.yml\n" >> URL.md
+
+    # Wait for Prometheus service to start
     wait_for_service "prometheus"
 }
 
 
+
+# Function to install Telegraf
 install_telegraf() {
     if check_service_status "telegraf"; then
         if ! prompt_for_reinstall "Telegraf"; then
@@ -576,6 +612,9 @@ install_telegraf() {
     echo -e "Telegraf configuration path:\n/etc/telegraf/telegraf.conf\n" >> URL.md
     wait_for_service "telegraf"
 }
+
+
+
 
 # Function to uninstall gnmic
 uninstall_gnmic() {
@@ -836,6 +875,7 @@ start_services_menu() {
 
 # Run the main menu
 main_menu
+
 
 
 
